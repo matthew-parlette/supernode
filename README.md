@@ -1,4 +1,4 @@
 supernode
 =========
 
-A supernode start script utilizing screen
+An n2n supernode start script utilizing screen
