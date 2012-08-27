@@ -20,6 +20,7 @@ PORT='15549'
 OPTIONS='-l $PORT'
 USERNAME='supernode'
 INVOCATION="$SERVICE $OPTIONS"
+HISTORY=1024
 
 ME=`whoami`
 as_user() {
@@ -30,14 +31,14 @@ as_user() {
   fi
 }
 
-mc_start() {
+start() {
   if  pgrep -u $USERNAME -f $SERVICE > /dev/null
   then
     echo "$SERVICE is already running!"
   else
     echo "Starting $SERVICE..."
     cd $MCPATH
-    as_user "cd $MCPATH && screen -h $HISTORY -dmS minecraft $INVOCATION"
+    as_user "cd $MCPATH && screen -h $HISTORY -dmS supernode $INVOCATION"
     sleep 7
     if pgrep -u $USERNAME -f $SERVICE > /dev/null
     then
@@ -48,32 +49,7 @@ mc_start() {
   fi
 }
 
-mc_saveoff() {
-  if pgrep -u $USERNAME -f $SERVICE > /dev/null
-  then
-    echo "$SERVICE is running... suspending saves"
-    as_user "screen -p 0 -S minecraft -X eval 'stuff \"say SERVER BACKUP STARTING. Server going readonly...\"\015'"
-    as_user "screen -p 0 -S minecraft -X eval 'stuff \"save-off\"\015'"
-    as_user "screen -p 0 -S minecraft -X eval 'stuff \"save-all\"\015'"
-    sync
-    sleep 10
-  else
-    echo "$SERVICE is not running. Not suspending saves."
-  fi
-}
-
-mc_saveon() {
-  if pgrep -u $USERNAME -f $SERVICE > /dev/null
-  then
-    echo "$SERVICE is running... re-enabling saves"
-    as_user "screen -p 0 -S minecraft -X eval 'stuff \"save-on\"\015'"
-    as_user "screen -p 0 -S minecraft -X eval 'stuff \"say SERVER BACKUP ENDED. Server going read-write...\"\015'"
-  else
-    echo "$SERVICE is not running. Not resuming saves."
-  fi
-}
-
-mc_stop() {
+stop() {
   if pgrep -u $USERNAME -f $SERVICE > /dev/null
   then
     echo "Stopping $SERVICE"
@@ -93,81 +69,17 @@ mc_stop() {
   fi
 }
 
-mc_update() {
-  if pgrep -u $USERNAME -f $SERVICE > /dev/null
-  then
-    echo "$SERVICE is running! Will not start update."
-  else
-    MC_SERVER_URL=http://s3.amazonaws.com/MinecraftDownload/launcher/minecraft_server.jar?v=`date | sed "s/[^a-zA-Z0-9]/_/g"`
-    as_user "cd $MCPATH && wget -q -O $MCPATH/minecraft_server.jar.update $MC_SERVER_URL"
-    if [ -f $MCPATH/minecraft_server.jar.update ]
-    then
-      if `diff $MCPATH/$SERVICE $MCPATH/minecraft_server.jar.update >/dev/null`
-      then 
-        echo "You are already running the latest version of $SERVICE."
-      else
-        as_user "mv $MCPATH/minecraft_server.jar.update $MCPATH/$SERVICE"
-        echo "Minecraft successfully updated."
-      fi
-    else
-      echo "Minecraft update could not be downloaded."
-    fi
-  fi
-}
-
-mc_backup() {
-   mc_saveoff
-   
-   NOW=`date "+%Y-%m-%d_%Hh%M"`
-   BACKUP_FILE="$BACKUPPATH/${WORLD}_${NOW}.tar"
-   echo "Backing up minecraft world..."
-   #as_user "cd $MCPATH && cp -r $WORLD $BACKUPPATH/${WORLD}_`date "+%Y.%m.%d_%H.%M"`"
-   as_user "tar -C \"$MCPATH\" -cf \"$BACKUP_FILE\" $WORLD"
-
-   echo "Backing up $SERVICE"
-   as_user "tar -C \"$MCPATH\" -rf \"$BACKUP_FILE\" $SERVICE"
-   #as_user "cp \"$MCPATH/$SERVICE\" \"$BACKUPPATH/minecraft_server_${NOW}.jar\""
-
-   mc_saveon
-
-   echo "Compressing backup..."
-   as_user "gzip -f \"$BACKUP_FILE\""
-   echo "Done."
-}
-
-mc_command() {
-  command="$1";
-  if pgrep -u $USERNAME -f $SERVICE > /dev/null
-  then
-    pre_log_len=`wc -l "$MCPATH/server.log" | awk '{print $1}'`
-    echo "$SERVICE is running... executing command"
-    as_user "screen -p 0 -S minecraft -X eval 'stuff \"$command\"\015'"
-    sleep .1 # assumes that the command will run and print to the log file in less than .1 seconds
-    # print output
-    tail -n $[`wc -l "$MCPATH/server.log" | awk '{print $1}'`-$pre_log_len] "$MCPATH/server.log"
-  fi
-}
-
 #Start-Stop here
 case "$1" in
   start)
-    mc_start
+    start
     ;;
   stop)
-    mc_stop
+    stop
     ;;
   restart)
-    mc_stop
-    mc_start
-    ;;
-  update)
-    mc_stop
-    mc_backup
-    mc_update
-    mc_start
-    ;;
-  backup)
-    mc_backup
+    stop
+    start
     ;;
   status)
     if pgrep -u $USERNAME -f $SERVICE > /dev/null
@@ -177,17 +89,9 @@ case "$1" in
       echo "$SERVICE is not running."
     fi
     ;;
-  command)
-    if [ $# -gt 1 ]; then
-      shift
-      mc_command "$*"
-    else
-      echo "Must specify server command (try 'help'?)"
-    fi
-    ;;
 
   *)
-  echo "Usage: $0 {start|stop|update|backup|status|restart|command \"server command\"}"
+  echo "Usage: $0 {start|stop|status|restart|}"
   exit 1
   ;;
 esac
