@@ -16,7 +16,7 @@
 
 #Settings
 SERVICE=`which supernode`
-PORT='15549'
+PORT='5644' #default port is 5644
 OPTIONS='-l $PORT'
 USERNAME='supernode'
 INVOCATION="$SERVICE $OPTIONS"
