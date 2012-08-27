@@ -17,10 +17,10 @@
 #Settings
 SERVICE=`which supernode`
 PORT='5644' #default port is 5644
-OPTIONS='-l $PORT'
+OPTIONS='-l $PORT' #-l defines the port to listen on
 USERNAME='supernode'
 INVOCATION="$SERVICE $OPTIONS"
-HISTORY=1024
+HISTORY=1024 #lines of history in the screen session
 
 ME=`whoami`
 as_user() {
@@ -37,8 +37,7 @@ start() {
     echo "$SERVICE is already running!"
   else
     echo "Starting $SERVICE..."
-    cd $MCPATH
-    as_user "cd $MCPATH && screen -h $HISTORY -dmS supernode $INVOCATION"
+    as_user "screen -h $HISTORY -dmS supernode $INVOCATION"
     sleep 7
     if pgrep -u $USERNAME -f $SERVICE > /dev/null
     then
