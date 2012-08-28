@@ -15,11 +15,11 @@
 ### END INIT INFO
 
 #User Settings
-PORT='5644' #default port is 5644
-OPTIONS='-l $PORT' #-l defines the port to listen on
-USERNAME='supernode' #local username to run supernode as
+PORT="5644" #default port is 5644
+OPTIONS="-l $PORT" #-l defines the port to listen on
+USERNAME="supernode" #local username to run supernode as
 HISTORY=1024 #lines of history in the screen session
-LOGFILE='/home/supernode/supernode.log'
+LOGFILE="/home/supernode/supernode.log"
 
 #Program Settings (You shouldn't need to change these)
 SERVICE=supernode
@@ -40,7 +40,8 @@ start() {
     echo "$SERVICE is already running!"
   else
     echo "Starting $SERVICE..."
-    as_user "$INVOCATION 2>&1 > $LOGFILE &"
+    echo `date`" Starting $SERVICE" >> $LOGFILE
+    as_user "$INVOCATION 2>&1 >> $LOGFILE &"
     sleep 3
     if pgrep -u $USERNAME -f $SERVICE > /dev/null
     then
