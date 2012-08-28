@@ -56,7 +56,7 @@ stop() {
   then
     echo "Stopping $SERVICE"
     as_user "killall $SERVICE"
-    sleep 7
+    sleep 3
   else
     echo "$SERVICE was not running."
   fi
@@ -90,7 +90,7 @@ case "$1" in
     ;;
 
   *)
-  echo "Usage: $0 {start|stop|status|restart|}"
+  echo "Usage: $0 {start|stop|status|restart}"
   exit 1
   ;;
 esac
