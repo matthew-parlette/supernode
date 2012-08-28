@@ -40,7 +40,7 @@ start() {
     echo "$SERVICE is already running!"
   else
     echo "Starting $SERVICE..."
-    echo `date`" Starting $SERVICE" >> $LOGFILE
+    echo "\n\n"`date`" Starting $SERVICE" >> $LOGFILE
     as_user "$INVOCATION 2>&1 >> $LOGFILE &"
     sleep 3
     if pgrep -u $USERNAME -f $SERVICE > /dev/null
