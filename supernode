@@ -1,99 +1,14 @@
-#!/bin/bash
-# /etc/init.d/supernode
-# version 0.1 2012-08-24 (YYYY-MM-DD)
+# Start the n2n supernode
 
-### BEGIN INIT INFO
-# Provides:   supernode
-# Required-Start: $local_fs $remote_fs
-# Required-Stop:  $local_fs $remote_fs
-# Should-Start:   $network
-# Should-Stop:    $network
-# Default-Start:  2 3 4 5
-# Default-Stop:   0 1 6
-# Short-Description:    n2n supernode server
-# Description:    Starts the n2n supernode server
-### END INIT INFO
+description "n2n Supernode"
 
-#User Settings
-PORT="5644" #default port is 5644
-OPTIONS="-l $PORT" #-l defines the port to listen on
-USERNAME="supernode" #local username to run supernode as
-HISTORY=1024 #lines of history in the screen session
-LOGFILE="/home/supernode/supernode.log"
+#user to run as
+setuid supernode
 
-#Program Settings (You shouldn't need to change these)
-SERVICE=supernode
-INVOCATION="$SERVICE $OPTIONS"
+#start after network is up
+start on net-device-up
 
-ME=`whoami`
-as_user() {
-  if [ $ME == $USERNAME ] ; then
-    bash -c "$1"
-  else
-    su - $USERNAME -c "$1"
-  fi
-}
+#-l: Port to listen on
+exec supernode -l 5644 >> /home/supernode/supernode.log
 
-start() {
-  if  pgrep -u $USERNAME -f $SERVICE > /dev/null
-  then
-    echo "$SERVICE is already running!"
-  else
-    echo "Starting $SERVICE..."
-    echo "\n\n"`date`" Starting $SERVICE" >> $LOGFILE
-    as_user "$INVOCATION 2>&1 >> $LOGFILE &"
-    sleep 3
-    if pgrep -u $USERNAME -f $SERVICE > /dev/null
-    then
-      echo "$SERVICE is now running."
-    else
-      echo "Error! Could not start $SERVICE!"
-    fi
-  fi
-}
-
-stop() {
-  if pgrep -u $USERNAME -f $SERVICE > /dev/null
-  then
-    echo "Stopping $SERVICE"
-    as_user "killall $SERVICE"
-    sleep 3
-  else
-    echo "$SERVICE was not running."
-  fi
-  if pgrep -u $USERNAME -f $SERVICE > /dev/null
-  then
-    echo "Error! $SERVICE could not be stopped."
-  else
-    echo "$SERVICE is stopped."
-  fi
-}
-
-#Start-Stop here
-case "$1" in
-  start)
-    start
-    ;;
-  stop)
-    stop
-    ;;
-  restart)
-    stop
-    start
-    ;;
-  status)
-    if pgrep -u $USERNAME -f $SERVICE > /dev/null
-    then
-      echo "$SERVICE is running."
-    else
-      echo "$SERVICE is not running."
-    fi
-    ;;
-
-  *)
-  echo "Usage: $0 {start|stop|status|restart}"
-  exit 1
-  ;;
-esac
-
-exit 0
+respawn
